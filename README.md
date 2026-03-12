@@ -13,13 +13,20 @@ TalentStream AI is a RAG-based talent acquisition system that uses LLM-powered m
 ## Quick Start
 
 ```bash
-cp .env.example .env  # Add your OPENAI_API_KEY
+echo "OPENAI_API_KEY=sk-your-key-here" > .env
 docker compose up --build
 ```
 
 - **Backend API:** http://localhost:8000/docs
 - **Frontend UI:** http://localhost:8501
 - **Qdrant Dashboard:** http://localhost:6333/dashboard
+
+## Running Tests
+
+```bash
+cd backend
+python -m pytest tests/ -v
+```
 
 ## Local Development
 
@@ -64,19 +71,3 @@ API_URL=http://localhost:8000 streamlit run app.py
 | `QDRANT_HOST` | `qdrant` | Qdrant server hostname |
 | `QDRANT_PORT` | `6333` | Qdrant server port |
 | `API_URL` | `http://backend:8000` | Backend URL (frontend only) |
-
-## Project Structure
-
-```
-backend/
-├── main.py                     # FastAPI entry point (lifespan + router)
-└── app/
-    ├── schemas.py              # All Pydantic models
-    ├── core/config.py          # Settings (env vars)
-    ├── api/v1/endpoints.py     # Route handlers
-    └── services/
-        ├── llm_service/        # LLM extraction & query parsing
-        └── qdrant_service/     # Vector DB operations
-frontend/
-└── app.py                      # Streamlit UI
-```

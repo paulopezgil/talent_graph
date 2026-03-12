@@ -6,6 +6,7 @@ from qdrant_client.models import (
     FieldCondition,
     Filter,
     MatchValue,
+    Nested,
     NestedCondition,
     Range,
 )
@@ -33,8 +34,10 @@ def search_employees(
             )
         conditions.append(
             NestedCondition(
-                nested=Filter(must=nested_conditions),
-                key="skills",
+                nested=Nested(
+                    key="skills",
+                    filter=Filter(must=nested_conditions),
+                )
             )
         )
     if parsed.min_years is not None:
