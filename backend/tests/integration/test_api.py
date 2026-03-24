@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.schemas import (
     EmployeeResult,
-    ParseEmployeeProfileAI,
+    ParseEmployeeProfileOutput,
     ParsedQuery,
     Skill,
     SkillFilter,
@@ -29,7 +29,7 @@ def client():
 
 def test_upload_and_search_round_trip(client):
     """Full upload → search flow through the API with mocked services."""
-    parsed_profile = ParseEmployeeProfileAI(
+    parsed_profile = ParseEmployeeProfileOutput(
         name="Alice Smith",
         title="Senior Python Developer",
         bio="10 years building Python backends.",

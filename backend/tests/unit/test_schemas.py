@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas import (
-    ParseEmployeeProfileAI,
+    ParseEmployeeProfileOutput,
     ParseEmployeeProfilePayload,
     ParsedQuery,
     QueryRequest,
@@ -48,9 +48,9 @@ class TestParseEmployeeProfilePayload:
         assert p.department == "Eng"
 
 
-class TestParseEmployeeProfileAI:
+class TestParseEmployeeProfileOutput:
     def test_inherits_payload_and_metadata(self):
-        p = ParseEmployeeProfileAI(
+        p = ParseEmployeeProfileOutput(
             name="Bob", title="PM", bio="Product work",
             skills=[], years_experience=5,
         )
@@ -59,7 +59,7 @@ class TestParseEmployeeProfileAI:
         assert p.skills == []
 
     def test_skills_default_to_empty_list(self):
-        p = ParseEmployeeProfileAI(name="Bob", title="PM", bio="Bio")
+        p = ParseEmployeeProfileOutput(name="Bob", title="PM", bio="Bio")
         assert p.skills == []
         assert p.years_experience is None
 

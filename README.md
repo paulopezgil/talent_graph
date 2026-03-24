@@ -13,7 +13,8 @@ TalentStream AI is a RAG-based talent acquisition system that uses LLM-powered m
 ## Quick Start
 
 ```bash
-echo "OPENAI_API_KEY=sk-your-key-here" > .env
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY
 docker compose up --build
 ```
 
@@ -67,10 +68,24 @@ API_URL=http://localhost:8000 streamlit run app.py
 
 ## Running Tests
 
-All tests live in `backend/tests/` and must be run from the `backend/` directory so that the `app` package is importable:
+All tests live in `backend/tests/` and must be run from the `backend/` directory so the `app` package is importable.
+
+Because backend settings now validate `OPENAI_API_KEY` at import time, provide that variable when running tests.
+
+Recommended test command (uses a dummy key; external providers are mocked in tests):
 
 ```bash
 cd backend
+OPENAI_API_KEY=test-key python -m pytest tests/ -v
+```
+
+If you prefer to use the root `.env` values:
+
+```bash
+cd backend
+set -a
+source ../.env
+set +a
 python -m pytest tests/ -v
 ```
 
@@ -92,4 +107,4 @@ python -m pytest tests/test_parse_employee_profile.py -v
 | `tests/test_parse_query.py` | LLM query parsing logic |
 | `tests/test_search_employees.py` | Qdrant search with metadata filtering |
 
-Tests mock external dependencies (OpenAI, Qdrant) so **no API keys or running services are needed**.
+Tests mock external dependencies (OpenAI, Qdrant), so no real API keys or running services are needed. A dummy `OPENAI_API_KEY` is still required for settings initialization.

@@ -4,11 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.schemas import EmployeeExtraction, EmployeeProfile
+from app.schemas import ParseEmployeeProfileAI, ParseEmployeeProfilePayload
 from app.services.llm_service.parse_employee import parse_employee
 
 
-def _mock_chain(result: EmployeeExtraction) -> AsyncMock:
+def _mock_chain(result: ParseEmployeeProfileAI) -> AsyncMock:
     """Return a mock LangChain chain whose ainvoke returns structured output."""
     chain = AsyncMock()
     chain.ainvoke = AsyncMock(return_value=result)
@@ -17,7 +17,7 @@ def _mock_chain(result: EmployeeExtraction) -> AsyncMock:
 
 @pytest.mark.asyncio
 async def test_extracts_skills_and_experience():
-    parsed = EmployeeExtraction(
+    parsed = ParseEmployeeProfileAI(
         skills=[
             {"name": "Python", "years_experience": 5, "description": "Backend"},
             {"name": "FastAPI", "years_experience": 2, "description": "REST APIs"},
@@ -31,7 +31,7 @@ async def test_extracts_skills_and_experience():
     ) as mock_prompt:
         mock_prompt.__or__ = MagicMock(return_value=mock)
 
-        profile = EmployeeProfile(
+        profile = ParseEmployeeProfilePayload(
             name="Alice", title="Senior Dev", bio="Experienced developer"
         )
         result = await parse_employee(profile)
@@ -56,7 +56,7 @@ async def test_handles_malformed_llm_response():
     ) as mock_prompt:
         mock_prompt.__or__ = MagicMock(return_value=mock)
 
-        profile = EmployeeProfile(name="Bob", title="Dev", bio="Some bio")
+        profile = ParseEmployeeProfilePayload(name="Bob", title="Dev", bio="Some bio")
         result = await parse_employee(profile)
 
     assert result.name == "Bob"
@@ -66,7 +66,7 @@ async def test_handles_malformed_llm_response():
 
 @pytest.mark.asyncio
 async def test_preserves_optional_fields():
-    parsed = EmployeeExtraction(skills=[], years_experience=3)
+    parsed = ParseEmployeeProfileAI(skills=[], years_experience=3)
     mock = _mock_chain(parsed)
 
     with patch(
@@ -74,7 +74,7 @@ async def test_preserves_optional_fields():
     ) as mock_prompt:
         mock_prompt.__or__ = MagicMock(return_value=mock)
 
-        profile = EmployeeProfile(
+        profile = ParseEmployeeProfilePayload(
             name="Carol",
             title="Manager",
             bio="Bio",

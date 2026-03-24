@@ -10,21 +10,22 @@ class Skill(BaseModel):
 
 
 class ParseEmployeeProfilePayload(BaseModel):
-    name: str = Field(..., description="Full name of the employee")
-    title: str = Field(..., description="Current job title or role")
-    bio: str = Field(..., description="Free-text employee profile / resume")
+    name: str | None = Field(None, description="Full name of the employee")
+    title: str | None = Field(None, description="Current job title or role")
+    bio: str | None = Field(None, description="Free-text employee profile / resume")
+    cv: str | None = Field(None, description="Raw CV / curriculum vitae text")
     department: str | None = Field(None, description="Department or business unit")
     location: str | None = Field(None, description="Geographic location (city, country)")
     grade: str | None = Field(None, description="Seniority grade (e.g. junior, mid, senior, lead)")
 
 
-class ParseEmployeeProfileAIMetadata(BaseModel):
+class ParseEmployeeProfileAI(BaseModel):
     """Structured fields expected from LLM extraction of an employee bio."""
     skills: list[Skill] = Field(default_factory=list, description="List of extracted skills with experience details")
     years_experience: float | None = Field(None, description="Total years of professional experience")
 
 
-class ParseEmployeeProfileAI(ParseEmployeeProfilePayload, ParseEmployeeProfileAIMetadata):
+class ParseEmployeeProfileOutput(ParseEmployeeProfilePayload, ParseEmployeeProfileAI):
     """Parsed employee profile with structured metadata extracted from free text."""
 
 class QueryRequest(BaseModel):
@@ -32,7 +33,7 @@ class QueryRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=50, description="Maximum number of results to return")
 
 
-class EmployeeResult(ParseEmployeeProfileAI):
+class EmployeeResult(ParseEmployeeProfileOutput):
     id: str = Field(..., description="Unique identifier of the employee record")
     score: float = Field(..., description="Relevance score from vector search")
 
@@ -50,8 +51,3 @@ class ParsedQuery(BaseModel):
     location: str | None = Field(None, description="Location filter")
     semantic_query: str = Field("", description="Rephrased query for embedding search")
 
-
-# Aliases used by application services
-EmployeeProfile = ParseEmployeeProfilePayload
-EmployeeExtraction = ParseEmployeeProfileAIMetadata
-ParsedEmployeeProfile = ParseEmployeeProfileAI

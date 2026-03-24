@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.schemas import ParseEmployeeProfileAI, ParsedQuery, Skill, SkillFilter, EmployeeResult
+from app.schemas import ParseEmployeeProfileOutput, ParsedQuery, Skill, SkillFilter, EmployeeResult
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ VALID_PROFILE = {
 
 class TestUploadEmployee:
     def test_returns_id_and_parsed_profile(self, client):
-        parsed = ParseEmployeeProfileAI(
+        parsed = ParseEmployeeProfileOutput(
             name="Alice Smith",
             title="Senior Python Developer",
             bio="10 years building Python backends.",
@@ -54,7 +54,7 @@ class TestUploadEmployee:
         assert resp.status_code == 422
 
     def test_optional_fields_are_accepted(self, client):
-        parsed = ParseEmployeeProfileAI(name="Bob", title="Dev", bio="Bio", skills=[])
+        parsed = ParseEmployeeProfileOutput(name="Bob", title="Dev", bio="Bio", skills=[])
         with (
             patch("app.api.v1.endpoints.parse_employee", new_callable=AsyncMock, return_value=parsed),
             patch("app.api.v1.endpoints.upsert_employee", return_value="uuid-2"),
@@ -107,7 +107,7 @@ class TestQueryEmployees:
 
 class TestUploadEmployeeFile:
     def test_returns_id_and_parsed_profile(self, client):
-        parsed = ParseEmployeeProfileAI(
+        parsed = ParseEmployeeProfileOutput(
             name="Alice Smith",
             title="Senior Python Developer",
             bio="Extracted from PDF.",
@@ -147,7 +147,7 @@ class TestUploadEmployeeFile:
         assert resp.status_code == 422
 
     def test_optional_fields_accepted(self, client):
-        parsed = ParseEmployeeProfileAI(name="Bob", title="Dev", bio="Bio", skills=[])
+        parsed = ParseEmployeeProfileOutput(name="Bob", title="Dev", bio="Bio", skills=[])
         with (
             patch("app.api.v1.endpoints.extract_text_from_upload", new_callable=AsyncMock, return_value="Bio"),
             patch("app.api.v1.endpoints.parse_employee", new_callable=AsyncMock, return_value=parsed),

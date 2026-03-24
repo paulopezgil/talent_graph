@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, call, patch
 
-from app.schemas import ParseEmployeeProfileAI, Skill
+from app.schemas import ParseEmployeeProfileOutput, Skill
 from app.services.qdrant_service.upsert_employee import upsert_employee
 
 FAKE_VECTOR = [0.1] * 1536
 
 
-def _make_parsed(**kwargs) -> ParseEmployeeProfileAI:
+def _make_parsed(**kwargs) -> ParseEmployeeProfileOutput:
     defaults = dict(
         name="Alice",
         title="Senior Dev",
@@ -19,7 +19,7 @@ def _make_parsed(**kwargs) -> ParseEmployeeProfileAI:
         skills=[Skill(name="Python", years_experience=10, description="Backend")],
         years_experience=10,
     )
-    return ParseEmployeeProfileAI(**{**defaults, **kwargs})
+    return ParseEmployeeProfileOutput(**{**defaults, **kwargs})
 
 
 @patch("app.services.qdrant_service.upsert_employee.qdrant")

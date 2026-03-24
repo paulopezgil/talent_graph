@@ -75,9 +75,9 @@ def search_employees(
         results.append(
             EmployeeResult(
                 id=str(hit.id),
-                name=p.get("name", ""),
-                title=p.get("title", ""),
-                bio=p.get("bio", ""),
+                name=p.get("name"),
+                title=p.get("title"),
+                bio=p.get("bio"),
                 skills=p.get("skills", []),
                 years_experience=p.get("years_experience"),
                 department=p.get("department"),
