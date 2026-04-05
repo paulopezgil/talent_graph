@@ -38,3 +38,8 @@ build/
 
 # Byte-compiled
 *.pyc
+
+# AI agent files
+.opencode/
+AGENTS.md
+CLAUDE.md
