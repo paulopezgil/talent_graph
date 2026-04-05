@@ -41,5 +41,3 @@ build/
 
 # AI agent files
 .opencode/
-AGENTS.md
-CLAUDE.md
