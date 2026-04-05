@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from sqlalchemy import Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,6 +8,11 @@ from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
 
 from backend.core.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.message import Message
+    from backend.models.script import Script
+    from backend.models.social_media import SocialMedia
 
 
 class Project(Base):
@@ -28,12 +33,12 @@ class Project(Base):
     )
 
     # Relationships
-    tags: Mapped[List["Tag"]] = relationship(
-        "Tag", secondary="project_tags", back_populates="projects"
-    )
-    documents: Mapped[List["Document"]] = relationship(
-        "Document", back_populates="project", cascade="all, delete-orphan"
-    )
     messages: Mapped[List["Message"]] = relationship(
         "Message", back_populates="project", cascade="all, delete-orphan"
+    )
+    scripts: Mapped[List["Script"]] = relationship(
+        "Script", back_populates="project", cascade="all, delete-orphan"
+    )
+    social_media: Mapped[List["SocialMedia"]] = relationship(
+        "SocialMedia", back_populates="project", cascade="all, delete-orphan"
     )
