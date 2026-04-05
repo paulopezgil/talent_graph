@@ -36,9 +36,9 @@ class Project(Base):
     messages: Mapped[List["Message"]] = relationship(
         "Message", back_populates="project", cascade="all, delete-orphan"
     )
-    scripts: Mapped[List["Script"]] = relationship(
-        "Script", back_populates="project", cascade="all, delete-orphan"
+    script: Mapped[Optional["Script"]] = relationship(
+        "Script", back_populates="project", uselist=False, cascade="all, delete-orphan"
     )
-    social_media: Mapped[List["SocialMedia"]] = relationship(
-        "SocialMedia", back_populates="project", cascade="all, delete-orphan"
+    social_media: Mapped[Optional["SocialMedia"]] = relationship(
+        "SocialMedia", back_populates="project", uselist=False, cascade="all, delete-orphan"
     )

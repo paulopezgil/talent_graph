@@ -16,7 +16,7 @@ class SocialMedia(Base):
     __tablename__ = "social_media"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), unique=True)
     
     youtube_title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     youtube_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
