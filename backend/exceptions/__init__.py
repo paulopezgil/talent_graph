@@ -4,78 +4,43 @@ VidPlan AI Exceptions Module.
 Exports all exceptions and handlers for use throughout the application.
 
 Example usage:
-    from backend.exceptions import ProjectNotFoundError
-    from backend.exceptions.handlers import register_exception_handlers
+    from backend.exceptions import VidPlanError
+    from backend.exceptions.handlers import handle_vidplan_error
 """
 
-# Base HTTP exceptions
-from backend.exceptions.base import (
-    AppError,
+# Base exceptions
+from backend.exceptions.classes import (
+    VidPlanError,
     NotFoundError,
+    AgentError,
+    DatabaseError,
     ValidationError,
     UnauthorizedError,
-    DatabaseError,
-    ExternalServiceError,
-    RateLimitError,
-)
-
-# Domain-specific exceptions
-from backend.exceptions.project import (
-    ProjectNotFoundError,
-    ProjectValidationError,
-    ProjectCreationError,
-)
-
-from backend.exceptions.message import (
-    MessageNotFoundError,
-    NoMessagesError,
-)
-
-from backend.exceptions.script import (
-    ScriptNotFoundError,
-    ScriptValidationError,
-)
-
-from backend.exceptions.social_media import (
-    SocialMediaNotFoundError,
-    SocialMediaValidationError,
-)
-
-from backend.exceptions.agent import (
-    AgentResponseError,
-    AgentOverloadedError,
 )
 
 # Handlers
 from backend.exceptions.handlers import (
-    register_exception_handlers,
+    handle_vidplan_error,
+    handle_not_found_error,
+    handle_agent_error,
+    handle_database_error,
+    handle_validation_error,
+    handle_unauthorized_error,
 )
 
 __all__ = [
     # Base HTTP exceptions
-    "AppError",
+    "VidPlanError",
     "NotFoundError",
+    "AgentError",
+    "DatabaseError",
     "ValidationError",
     "UnauthorizedError",
-    "DatabaseError",
-    "ExternalServiceError",
-    "RateLimitError",
-    # Project exceptions
-    "ProjectNotFoundError",
-    "ProjectValidationError",
-    "ProjectCreationError",
-    # Message exceptions
-    "MessageNotFoundError",
-    "NoMessagesError",
-    # Script exceptions
-    "ScriptNotFoundError",
-    "ScriptValidationError",
-    # Social media exceptions
-    "SocialMediaNotFoundError",
-    "SocialMediaValidationError",
-    # Agent exceptions
-    "AgentResponseError",
-    "AgentOverloadedError",
-    # Handlers
-    "register_exception_handlers",
+    # Exception handlers
+    "handle_vidplan_error",
+    "handle_not_found_error",
+    "handle_agent_error",
+    "handle_database_error",
+    "handle_validation_error",
+    "handle_unauthorized_error",
 ]

@@ -1,4 +1,4 @@
-# VidPlan AI: Intelligent Content Creation Assistant
+# VidPlan AI 🎥
 
 **VidPlan AI** (formerly Talent Stream AI) is an AI-powered content creation platform that streamlines video production workflows. It combines conversational AI with structured content generation to help creators transform ideas into polished scripts, social media captions, and organized project plans.
 

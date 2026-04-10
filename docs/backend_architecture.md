@@ -128,6 +128,33 @@ To prevent business logic and database queries from being locked inside HTTP rou
 - **Routers (`routers/`)** are extremely thin. They only handle HTTP requests, validate payloads using Pydantic, call the CRUD service, and return HTTP responses.
 - **CRUD Services (`services/crud/`)** contain all the SQLAlchemy `select`, `insert`, and `update` logic. This allows both the FastAPI endpoints AND the AI Agent to reuse the exact same database operations.
 
+### Exception Handling Pattern (`backend/exceptions/`)
+The backend implements a centralized exception handling system that ensures consistent error responses across all endpoints.
+
+#### Exception Hierarchy
+```
+VidPlanError (base)
+├── NotFoundError      # Resource not found (404)
+├── AgentError         # LLM/AI call failures (500)
+├── DatabaseError      # SQLAlchemy operation failures (500)
+├── ValidationError    # Data validation failures (400)
+└── UnauthorizedError  # Access control failures (401)
+```
+
+#### Handler Implementation (`exceptions/handlers.py`)
+- **Base Handler** (`handle_vidplan_exception`): Core logic shared by all handlers. Returns an `ErrorResponse` schema with `error_code`, `message`, and optional `detail`.
+- **Dev Mode**: When `ENV=development`, includes the full exception `detail` in responses. In production, only returns the public-facing `message`.
+- **Specific Handlers**: Each exception type has a dedicated handler that delegates to the base handler with the appropriate HTTP status code.
+
+#### FastAPI Integration (`app.py`)
+All exception handlers are registered globally with FastAPI via `app.add_exception_handler()`, ensuring any unhandled exception flows through the centralized error response format.
+
+#### Raising Exceptions in Services
+The service layer should raise specific exceptions rather than returning error strings or `None`:
+- **CRUD Layer** (`services/crud/`): Raise `NotFoundError` when resources don't exist, wrap commit failures in `DatabaseError`
+- **Agent Layer** (`services/agent/`): Wrap LLM call failures in `AgentError`
+- **Conversation Layer** (`services/conversation/`): Propagate exceptions from underlying layers
+
 ## Backend Responsibilities
 
 1. Expose explicit REST endpoints via domain-specific routers (`projects.py`, `messages.py`, `scripts.py`, `social_media.py`) which delegate to `services/crud/`.

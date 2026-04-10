@@ -3,11 +3,7 @@ from typing import Any, Optional
 
 class VidPlanError(Exception):
     """Base exception for all app errors"""
-
-    def __init__(self, message: str, detail: Optional[str] = None):
-        self.message = message
-        self.detail = detail
-        super().__init__(message)
+    pass
 
 
 class NotFoundError(VidPlanError):
@@ -24,7 +20,6 @@ class AgentError(VidPlanError):
     """Pydantic AI / LLM call failed"""
 
     def __init__(self, tool_name: str, message: str):
-        self.tool_name = tool_name
         message = f"Agent tool '{tool_name}' failed: {message}"
         super().__init__(message)
 
@@ -35,9 +30,8 @@ class DatabaseError(VidPlanError):
     def __init__(self, operation: str, original_error: Exception):
         self.operation = operation
         self.original_error = original_error
-        message = f"Database operation '{operation}' failed"
-        super().__init__(message, detail=str(original_error))
-
+        message = f"Database operation '{operation}' failed: {str(original_error)}"
+        super().__init__(message)
 
 class ValidationError(VidPlanError):
     """Data validation error"""

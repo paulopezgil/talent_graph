@@ -4,6 +4,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.exceptions import AgentRunError, ModelHTTPError
+import logging
 
 from backend.core.config import settings
 from backend.services.agent.prompts import SYSTEM_PROMPT_STATIC, build_dynamic_context
@@ -11,7 +13,9 @@ from backend.services.agent.tools import project
 from backend.services.agent.tools import script
 from backend.services.agent.tools import social_media
 from backend.services.agent.utils import build_message_history
+from backend.exceptions import AgentError
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ProjectAgentDeps:
@@ -81,5 +85,9 @@ async def generate_agent_response(db: AsyncSession, project_id: UUID, user_promp
     deps = ProjectAgentDeps(db=db, project_id=project_id)
 
     # Run the agent with the user prompt, dependencies, and message history
-    result = await vidplan_agent.run(user_prompt, deps=deps, message_history=history)
-    return result.data
+    try:
+        result = await vidplan_agent.run(user_prompt, deps=deps, message_history=history)
+        return result.output
+    except AgentRunError as err:
+        logger.exception(f"Agent error for project {project_id}")
+        raise AgentError(message=str(err), original_error=err)

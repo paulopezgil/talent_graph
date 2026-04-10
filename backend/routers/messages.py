@@ -1,8 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database import get_db
@@ -29,13 +28,10 @@ async def create_project_message(project_id: UUID, request: MessageInput, db: As
 
 @router.put("/{project_id}/messages/last", response_model=MessageResponse)
 async def update_last_message(project_id: UUID, request: MessageInput, db: AsyncSession = Depends(get_db)):
-    """
-    Deletes the last exchange (user message + assistant response),
-    then creates a new exchange with the provided content.
-    """
-    try:
-        await conversation_service.delete_last_exchange(db, project_id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    """Deletes the last exchange, then creates a new exchange with the provided content."""
+
+    # 1. Delete last exchange (last user + assistant messages)
+    await conversation_service.delete_last_exchange(db, project_id)
     
+    # 2. Create new exchange with updated content
     return await conversation_service.get_agent_response(db, project_id, request.content)
