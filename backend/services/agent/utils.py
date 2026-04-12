@@ -16,7 +16,7 @@ def build_message_history(db_messages: List[Message]) -> list[ModelMessage]:
             logger.warning(f"Skipping message ID {msg.id} due to missing role")
             continue
         if msg.role == "user":
-            history.append(ModelRequest(parts=[TextPart(content=msg.content)]))
+            history.append(ModelRequest(content=msg.content))
         elif msg.role == "assistant":
-            history.append(ModelResponse(parts=[TextPart(content=msg.content)]))
+            history.append(ModelResponse(content=msg.content))
     return history

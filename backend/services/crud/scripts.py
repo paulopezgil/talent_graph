@@ -2,14 +2,10 @@ from typing import Optional
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
 from backend.models.script import Script
 from backend.schemas.script import ScriptUpdate
 from backend.exceptions.classes import NotFoundError
-
-
-logger = logging.getLogger(__name__)
 
 
 async def get_project_script(db: AsyncSession, project_id: UUID) -> Optional[Script]:
@@ -17,8 +13,7 @@ async def get_project_script(db: AsyncSession, project_id: UUID) -> Optional[Scr
     script = result.scalar_one_or_none()
 
     if script is None:
-        logger.warning(f"Script not found for project ID: {project_id}")
-        return None
+        raise NotFoundError(f"Script for project with id {project_id} not found")
 
     return script
 

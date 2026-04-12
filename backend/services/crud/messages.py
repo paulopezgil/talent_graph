@@ -2,13 +2,9 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
 from backend.models.message import Message
 from backend.exceptions.classes import NotFoundError
-
-
-logger = logging.getLogger(__name__)
 
 
 async def get_project_messages(db: AsyncSession, project_id: UUID) -> List[Message]:
@@ -48,8 +44,7 @@ async def get_message(db: AsyncSession, message_id: UUID) -> Optional[Message]:
     message = result.scalar_one_or_none()
     
     if message is None:
-        logger.warning(f"Message not found with ID: {message_id}")
-        raise NotFoundError(entity="Message", identifier=str(message_id))
+        raise NotFoundError(f"Message with id {message_id} not found")
 
     return message
 

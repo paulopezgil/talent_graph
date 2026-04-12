@@ -5,7 +5,7 @@ Exports all exceptions and handlers for use throughout the application.
 
 Example usage:
     from backend.exceptions import VidPlanError
-    from backend.exceptions.handlers import handle_vidplan_error
+    from backend.exceptions import handle_vidplan_error
 """
 
 # Base exceptions
@@ -18,17 +18,11 @@ from backend.exceptions.classes import (
     UnauthorizedError,
 )
 
-# Handlers
-from backend.exceptions.handlers import (
-    handle_vidplan_error,
-    handle_not_found_error,
-    handle_agent_error,
-    handle_database_error,
-    handle_validation_error,
-    handle_unauthorized_error,
-)
+# Handler
+from backend.exceptions.handler import handle_vidplan_error
 
-__all__ = [
+__all__ = (
+
     # Base HTTP exceptions
     "VidPlanError",
     "NotFoundError",
@@ -36,11 +30,7 @@ __all__ = [
     "DatabaseError",
     "ValidationError",
     "UnauthorizedError",
-    # Exception handlers
+
+    # Exception handler
     "handle_vidplan_error",
-    "handle_not_found_error",
-    "handle_agent_error",
-    "handle_database_error",
-    "handle_validation_error",
-    "handle_unauthorized_error",
-]
+)

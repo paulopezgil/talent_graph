@@ -2,14 +2,10 @@ from typing import List, Optional, Sequence
 from uuid import UUID
 from sqlalchemy import select, Row
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
 from backend.models.project import Project
 from backend.schemas.project import ProjectUpdate
 from backend.exceptions import NotFoundError
-
-
-logger = logging.getLogger(__name__)
 
 
 async def get_projects(db: AsyncSession) -> Sequence[Row]:
@@ -24,7 +20,6 @@ async def get_project(db: AsyncSession, project_id: UUID) -> Optional[Project]:
     project = result.scalar_one_or_none()
 
     if project is None:
-        logger.warning(f"Project not found with ID: {project_id}")
         raise NotFoundError(f"Project with id {project_id} not found")
 
     return project
