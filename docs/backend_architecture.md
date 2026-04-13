@@ -4,21 +4,31 @@
 
 ```text
 backend/
-├── core/           # Application config, security, and DB connection singletons
-├── routers/        # API routing and endpoint definitions
+├── core/              # Application config, security, and DB connection singletons
+├── routers/           # API routing and endpoint definitions
 │   ├── projects.py     # Endpoints for Project tab
 │   ├── messages.py     # Endpoints for Chat history and Agent execution
 │   ├── scripts.py      # Endpoints for Script tab
 │   └── social_media.py # Endpoints for Social Network tab
-├── services/       # Core business logic
-│   ├── agent.py      # Pydantic AI agent definition and tools
-│   └── crud/         # Repository pattern: Reusable DB operations
+├── services/          # Core business logic
+│   ├── agent/          # Pydantic AI agent definition, tools, and prompts
+│   │   ├── agent.py    # Core Agent definition
+│   │   ├── utils.py    # Message history builder
+│   │   ├── prompts.py  # System prompts
+│   │   └── tools/      # Agent tool definitions
+│   │       ├── project.py
+│   │       ├── script.py
+│   │       └── social_media.py
+│   ├── conversation/   # Orchestration layer for agent interactions
+│   │   ├── get_agent_response.py  # Handles agent calls and message saving
+│   │   └── delete_last_exchange.py # Handles message editing
+│   └── crud/          # Repository pattern: Reusable DB operations
 │       ├── projects.py
 │       ├── messages.py
 │       ├── scripts.py
 │       └── social_media.py
-├── models/         # Database ORM models (SQLAlchemy table structures)
-├── schemas/        # Pydantic validation schemas (API requests/responses)
+├── models/            # Database ORM models (SQLAlchemy table structures)
+├── schemas/           # Pydantic validation schemas (API requests/responses)
 └── app.py
 ```
 
@@ -89,19 +99,24 @@ Stores generated captions, descriptions, and hashtags. Mapped to the **Social Ne
 
 ## AI Agent & Context Management
 
-The Agent logic is strictly separated into two layers:
+The Agent logic is strictly separated into multiple layers:
 
-### 1. The Core Agent Service (`services/agent.py`)
-- Implemented using **Pydantic AI**. It has no knowledge of HTTP routing.
-- **Dependencies (`ProjectAgentDeps`):** A dataclass that provides the `AsyncSession` (database connection) and the `project_id` to the agent's prompts and tools.
-- **Dynamic System Prompt:** A function (`@vidplan_agent.system_prompt`) that runs before every LLM call. It fetches the real-time state of the `Project`, `Script`, and `SocialMedia` rows from the DB and injects their content into the system instructions. This turns the database into the Agent's long-term memory.
-- **Execution Tools:** Explicit Python functions (`@vidplan_agent.tool`) that allow the AI to execute updates. When called, these functions use the injected DB session to execute SQLAlchemy `UPDATE` queries on the DB, simulating a user clicking "Save" on the frontend tabs:
-  - `update_project_tab(ctx, title, description)`
-  - `update_script_tab(ctx, content)`
-  - `update_social_media_tab(ctx, ...)`
-- **Safety:** The AI never writes raw SQL. It outputs validated JSON matching the tool schemas, and the backend executes the explicit updates.
+### 1. The Core Agent Service (`services/agent/`)
+- **Agent Definition** (`agent.py`): Implemented using **Pydantic AI**. It has no knowledge of HTTP routing.
+- **Dependencies** (`ProjectAgentDeps`): A dataclass that provides the `AsyncSession` (database connection) and the `project_id` to the agent's prompts and tools.
+- **Dynamic System Prompt** (`prompts.py`): A function (`@vidplan_agent.system_prompt`) that runs before every LLM call. It fetches the real-time state of the `Project`, `Script`, and `SocialMedia` rows from the DB and injects their content into the system instructions. This turns the database into the Agent's long-term memory.
+- **Message History Builder** (`utils.py`): Converts database `Message` rows into Pydantic AI's `ModelMessage` format for conversation continuity.
+- **Execution Tools** (`tools/`): Explicit Python functions (`@vidplan_agent.tool`) organized by domain that allow the AI to execute updates:
+  - `tools/project.py`: `update_project_tab(ctx, title, description)`
+  - `tools/script.py`: `update_script_tab(ctx, content)`
+  - `tools/social_media.py`: `update_social_media_tab(ctx, ...)`
+- **Safety**: The AI never writes raw SQL. It outputs validated JSON matching the tool schemas, and the backend executes the explicit updates.
 
-### 2. The HTTP API Router (`routers/messages.py`)
+### 2. The Conversation Orchestration Layer (`services/conversation/`)
+- **get_agent_response.py**: Orchestrates the agent call. Saves user message to DB, invokes the agent, saves assistant response, returns the response.
+- **delete_last_exchange.py**: Handles the "edit last message" flow - deletes the last user/assistant pair and regenerates the response.
+
+### 3. The HTTP API Router (`routers/messages.py`)
 This layer strictly adheres to RESTful resource management. The frontend manages `messages` as simple resources, and the backend orchestrates the AI as an invisible side-effect of creating or editing these messages. There is no isolated "Agent API".
 
 - **`GET /api/projects/{project_id}/messages`**

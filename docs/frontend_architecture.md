@@ -15,21 +15,21 @@
 ### Layout Components
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    VidPlan AI Header                         │
-├──────────────┬──────────────────────────────────────────────┤
-│              │                                              │
-│   Left       │             Right Main Panel                 │
-│   Sidebar    │                                              │
-│              │  ┌────────────────────────────────────┐     │
-│   • Project  │  │         Tab Navigation             │     │
-│     List     │  ├────────────────────────────────────┤     │
-│   • Create   │  │                                    │     │
-│     New      │  │         Tab Content Area           │     │
-│   Project    │  │   (Project/Chat/Script/Social)     │     │
-│              │  │                                    │     │
-│              │  └────────────────────────────────────┘     │
-└──────────────┴──────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    VidPlan AI Header                    │
+├──────────────┬──────────────────────────────────────────┤
+│              │                                          │
+│   Left       │             Right Main Panel             │
+│   Sidebar    │                                          │
+│              │  ┌────────────────────────────────────┐  │
+│   • Create   │  │         Tab Navigation             │  │
+│     Project  │  ├────────────────────────────────────┤  │
+│              │  │                                    |  │
+│   • Project  │  │         Tab Content Area           |  │
+│     List     │  │   (Project/Chat/Script/Social)     |  │
+│              │  │                                    |  │
+│              │  └────────────────────────────────────┘  │
+└──────────────┴──────────────────────────────────────────┘
 ```
 
 ### 1. Left Sidebar (`frontend/components/sidebar.py`)
@@ -100,6 +100,23 @@ st.session_state.update({
 - **Optimistic Updates**: UI updates immediately, API call in background
 - **Error Recovery**: Retry logic with exponential backoff
 - **Conflict Resolution**: Last-write-wins with user notification
+
+### API Endpoint Mapping
+
+| UI Component | Backend Endpoint | Method | Request Body | Response |
+|--------------|------------------|--------|--------------|----------|
+| Sidebar - Project List | `/api/projects` | GET | — | List[Project] |
+| Sidebar - Create Project | `/api/projects` | POST | `{"title": "New Project"}` | Project |
+| Project Tab - Title | `/api/projects/{id}` | PUT | `{"title": "..."}` | Project |
+| Project Tab - Description | `/api/projects/{id}` | PUT | `{"description": "..."}` | Project |
+| Chat Tab - Send Message | `/api/projects/{id}/messages` | POST | `{"content": "..."}` | Message |
+| Chat Tab - Edit & Regenerate | `/api/projects/{id}/messages/last` | PUT | `{"content": "..."}` | Message |
+| Chat Tab - Get History | `/api/projects/{id}/messages` | GET | — | List[Message] |
+| Script Tab - Content | `/api/projects/{id}/script` | GET | — | Script |
+| Script Tab - Update | `/api/projects/{id}/script` | PUT | `{"content": "..."}` | Script |
+| Social Media Tab - Get | `/api/projects/{id}/social-media` | GET | — | SocialMedia |
+| Social Media Tab - Update | `/api/projects/{id}/social-media` | PUT | `{...fields}` | SocialMedia |
+
 
 ## User Experience Patterns
 
