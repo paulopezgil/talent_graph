@@ -4,6 +4,7 @@ from sqlalchemy import select, Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.project import Project
+from backend.models.conversation_context import ConversationContext
 from backend.schemas.project import ProjectUpdate
 from backend.exceptions import NotFoundError
 
@@ -28,6 +29,12 @@ async def create_project(db: AsyncSession) -> Project:
     # Initialize an empty project
     project = Project(title="", description="")
     db.add(project)
+    await db.flush()  # Get the project ID without committing
+
+    # Create associated conversation context
+    conversation_context = ConversationContext(project_id=project.id)
+    db.add(conversation_context)
+
     await db.commit()
     await db.refresh(project)
     return project

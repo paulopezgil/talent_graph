@@ -1,0 +1,40 @@
+import uuid
+from datetime import datetime
+from typing import Optional, TYPE_CHECKING
+
+from sqlalchemy import Text, ForeignKey, DateTime, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+
+from backend.core.database import Base
+
+if TYPE_CHECKING:
+    from backend.models.project import Project
+
+
+class ConversationContext(Base):
+    __tablename__ = "conversation_context"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), unique=True
+    )
+
+    # AI memory fields
+    user_intent: Mapped[Optional[str]] = mapped_column(Text, default="")
+    user_preferences: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
+    conversation_summary: Mapped[Optional[str]] = mapped_column(Text, default="")
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship(
+        "Project",
+        back_populates="conversation_context",
+        uselist=False,
+    )

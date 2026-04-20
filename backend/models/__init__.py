@@ -1,13 +1,13 @@
 from backend.core.database import Base
 from .project import Project
-from .message import Message
+from .conversation_context import ConversationContext
 from .script import Script
 from .social_media import SocialMedia
 
 __all__ = [
     "Base",
     "Project",
-    "Message",
+    "ConversationContext",
     "Script",
     "SocialMedia",
 ]

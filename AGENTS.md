@@ -7,7 +7,7 @@
 # Project Specifics
 **Project Name**: VidPlan AI (Frontend title: TalentStream AI)
 **Description**: Intelligent content-creator assistant designed to streamline production. Features an AI agent with Brainstorming and Execution modes. Uses PGVector for semantic search and RAG.
-**Language & Tooling**: Python 3.x, FastAPI, Streamlit, PostgreSQL, PGVector, SQLAlchemy, Pytest.
+**Language & Tooling**: Python 3.x, FastAPI, React + TypeScript + Vite, PostgreSQL, PGVector, SQLAlchemy, Pytest.
 **Conventions**: PEP 8 style, strict typing with Pydantic, modular services.
 
 ## Architecture
@@ -21,15 +21,19 @@
 - **`backend/models/`** — Database ORM models (SQLAlchemy table structures)
 - **`backend/schemas/`** — Pydantic validation schemas (API requests/responses)
 - **`backend/app.py`** — Main FastAPI application entrypoint
-- **`frontend/`** — Streamlit UI Application
+- **`frontend/`** — React + TypeScript + Vite Application
 
 ### Database Schema (PostgreSQL + PGVector)
 - Backend uses `asyncpg` and SQLAlchemy ORM.
 - **`project_index`**: Vector table for RAG and semantic search (1536-dim vector).
+- **`projects`**: Stores project metadata including `summary` and `key_topics` for LLM context
+- **`conversation_context`**: Stores AI memory (`user_intent`, `user_preferences`, `conversation_summary`) - NOT for frontend display
 
 ### Frontend
-- **Framework**: Streamlit (`frontend/app.py`)
-- *Note: Previous iterations or plans may have referenced Next.js, but the current implementation is Streamlit.*
+- **Framework**: React + TypeScript + Vite (`src/App.tsx`)
+- **State**: React Context for global state (selectedProjectId, activeTab), local useState for everything else
+- **Styling**: Plain CSS with component-level files
+- **HTTP**: Native fetch API (no Axios or other libraries)
 
 ## Build / Lint / Test Commands
 
@@ -61,11 +65,10 @@ OPENAI_API_KEY=sk-... uvicorn app:app --reload --port 8000
 
 **Local Frontend**:
 ```bash
-# Runs Streamlit UI
+# Runs React + Vite on port 5173
 cd frontend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
+npm install
+npm run dev
 ```
 
 ### Running Tests
@@ -121,37 +124,46 @@ python -m pytest tests/ -v
 ## Current State vs. Target Architecture
 
 **Current State (Phase 1 Completed)**:
-- **Models**: Cleaned up legacy models. Implemented SQLAlchemy models for `Project`, `Message`, `Script`, and `SocialMedia` with correct relations.
+- **Models**: Cleaned up legacy models. Implemented SQLAlchemy models for `Project`, `Script`, and `SocialMedia` with correct relations.
 - **Schemas**: Implemented strict Pydantic models for validation (`schemas/`).
-- **Routers**: Replaced monolithic `database.py` with domain-specific routers (`projects.py`, `messages.py`, `scripts.py`, `social_media.py`) mapped to explicit endpoints.
-- **Next Up**: Phase 2 (Repository Pattern Refactor & AI Agent Implementation).
+- **Routers**: Replaced monolithic `database.py` with domain-specific routers (`projects.py`, `scripts.py`, `social_media.py`) mapped to explicit endpoints.
+- **Next Up**: Phase 2 (Conversation Context + Chat API + React Frontend).
 
 **Target Architecture (VidPlan AI)**:
 - A content creator assistant.
-- **Backend Schema**: `projects`, `messages`, `scripts`, `social_media`.
-- **Backend AI**: Pydantic AI agent with brainstorming mode (saves to `messages`) and execution mode (updates `projects`, `scripts`, `social_media` via explicit function calling).
-- **Frontend UI**: Left Sidebar (Project selection/creation) and Right Main Panel (Project Tab, Chat Tab, Script Tab, Social Network Tab) mapping 1:1 to the database tables.
+- **Backend Schema**: `projects` (with summary, key_topics), `conversation_context` (user_intent, user_preferences, conversation_summary), `scripts`, `social_media`.
+- **Backend AI**: Pydantic AI agent that reads conversation_context and uses function tools to update `projects`, `scripts`, `social_media`.
+- **Frontend**: React + TypeScript + Vite with sidebar + 4 tabs. Chat is session-based (not persisted).
+
+### Current Intent
+This project is evolving. We've pivoted from Streamlit to React + Vite for the frontend, and the `messages` table is now a `conversation_context` table that stores AI memory (user_intent, user_preferences, conversation_summary) - not chat history. Chat messages are session-based only.
 
 ### Proposed Implementation Order
 
 **Phase 1: Database & Backend Foundations [COMPLETED]**
-- [x] **Clean up Models**: Remove the outdated `Document` and `Tag` models.
-- [x] **Implement New Models**: Create SQLAlchemy models for `scripts` and `social_media`, and update `Project` and `Message`.
+- [x] **Clean up Models**: Remove the outdated `Message` model.
+- [x] **Implement New Models**: Create SQLAlchemy models for `scripts` and `social_media`, and update `Project` with `summary` and `key_topics`.
 - [x] **Pydantic Schemas**: Create the corresponding Pydantic schemas in `schemas/`.
 - [x] **CRUD Endpoints**: Implement explicit REST routes split by domain.
 
-**Phase 2: AI Agent & Orchestration [IN PROGRESS]**
-5. **Repository Pattern Refactor**: Move SQLAlchemy DB queries out of the routers and into `services/crud/` so they can be reused by the Agent tools.
-6. **Agent Service**: Build the core Pydantic AI logic in `services/agent.py`. Implement State-Driven memory (injecting DB rows into system prompt) and define function tools (`update_script`, etc.).
-7. **Agent Router**: Implement `routers/agent.py` to handle `POST` (New Message) and `PUT` (Regenerate Last Message), fetching short-term sliding window history and invoking the agent.
+**Phase 2: Conversation Context & Chat API [IN PROGRESS]**
+1. **Create Conversation Context Table**: New SQLAlchemy model for `conversation_context` with `user_intent`, `user_preferences`, `conversation_summary`.
+2. **Create Schemas**: Pydantic schemas for conversation context.
+3. **Create CRUD Service**: Add `services/crud/conversation_context.py` with get/update functions.
+4. **Create Router**: Add `routers/conversation_context.py` with GET/PUT endpoints.
+5. **Create Chat Router**: Add `routers/chat.py` with POST `/chat` endpoint that reads context, invokes AI, and returns response.
+6. **Update Agent Service**: Modify `services/agent/` to read from `conversation_context` instead of `messages` table.
 
-**Phase 3: Frontend Refactoring (Streamlit)**
-7. **Core UI Shell**: Completely rework `frontend/app.py` to remove the old "Talent" tabs. Implement the Left Sidebar for project management (list projects, create new) and the Right Main Panel layout.
-8. **Tab Components**: Implement the four specific tabs (`Project`, `Chat`, `Script`, `Social Network`), wiring them up to the Phase 1 CRUD endpoints to display and edit data vertically.
-9. **Chat Integration**: Connect the `Chat Tab` to the Phase 2 Agent endpoints, ensuring the UI updates when the AI enters "execution mode" and writes to other tabs.
+**Phase 3: React Frontend Build**
+7. **Setup Vite + React**: Initialize React + TypeScript + Vite project.
+8. **Create Layout**: Sidebar + Main Panel with tab navigation.
+9. **Implement API Layer**: `api/client.ts`, `api/projects.ts`, `api/chat.ts`, `api/script.ts`, `api/social.ts`.
+10. **Implement Components**: Sidebar, Tabs, Chat, Editor.
+11. **Implement State**: React Context for selectedProjectId and activeTab.
+12. **Connect to Backend**: Wire up all endpoints.
 
 **Phase 4: Testing & Polish**
-10. **Integration Testing**: Run through the full user journey (Create Project -> Chat Brainstorming -> Generate Script -> Generate Social Media -> Manual Edits) to ensure end-to-end functionality.
+13. **Integration Testing**: Run through the full user journey (Create Project -> Chat -> Generate Script -> Generate Social Media -> Manual Edits).
 
 ## Testing Strategy & State
 
@@ -164,5 +176,5 @@ Before we write tests for the database, we need a clear testing strategy. Testin
 
 ### Current State
 - [x] Database: SQLAlchemy Models implemented.
-- [ ] Database Tests: Need CRUD tests for `projects`, `messages`, `scripts`, and `social_media_posts`.
+- [ ] Database Tests: Need CRUD tests for `projects`, `conversation_context`, `scripts`, and `social_media_posts`.
 - [ ] Database Tests: Need tests for PGVector similarity search on the `project_index`.

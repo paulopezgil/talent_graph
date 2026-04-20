@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,14 +71,22 @@ async def update_social_media_tab(
     )
 
 
-async def generate_agent_response(db: AsyncSession, project_id: UUID, user_prompt: str, message_history: list) -> str:
+async def generate_agent_response(
+    db: AsyncSession,
+    project_id: UUID,
+    user_prompt: str,
+    message_history: Optional[List[Dict[str, str]]] = None,
+) -> str:
     """
     Orchestrates the AI invocation.
-    Receives message history as parameter, formats it, and runs the agent.
+    Reads conversation context from database for AI memory.
+    Includes session-based message history for conversation continuity.
     """
 
-    # Convert to Pydantic AI ModelMessage format and initialize dependencies
-    history = build_message_history(message_history)
+    # Convert message history to Pydantic AI format
+    history = build_message_history(message_history or [])
+
+    # Initialize dependencies
     deps = ProjectAgentDeps(db=db, project_id=project_id)
 
     # Run the agent with the user prompt, dependencies, and message history
@@ -87,3 +95,8 @@ async def generate_agent_response(db: AsyncSession, project_id: UUID, user_promp
         return result.output
     except AgentRunError as err:
         raise AgentError(f"Agent failed to generate a response: {err}") from err
+    except Exception as exc:
+        raise AgentError(
+            f"An unexpected error of type {type(exc).__name__}"
+            f" occurred during agent execution: {exc}"
+        ) from exc

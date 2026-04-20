@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 import logging
 
-from backend.routers import projects, messages, scripts, social_media
+from backend.routers import projects, chat, scripts, social_media
 from backend.core.database import engine
 from backend.models import Base
 from backend.exceptions import VidPlanError, DatabaseError, ValidationError, handle_vidplan_error
@@ -29,7 +29,7 @@ app = FastAPI(title="Vidplan AI", version="0.1.0", lifespan=lifespan)
 
 # Data Routes
 app.include_router(projects.router)
-app.include_router(messages.router)
+app.include_router(chat.router)
 app.include_router(scripts.router)
 app.include_router(social_media.router)
 

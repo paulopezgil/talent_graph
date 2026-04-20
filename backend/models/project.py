@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Text, DateTime
+from sqlalchemy import Text, DateTime, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from pgvector.sqlalchemy import Vector
@@ -10,7 +10,7 @@ from pgvector.sqlalchemy import Vector
 from backend.core.database import Base
 
 if TYPE_CHECKING:
-    from backend.models.message import Message
+    from backend.models.conversation_context import ConversationContext
     from backend.models.script import Script
     from backend.models.social_media import SocialMedia
 
@@ -21,6 +21,8 @@ class Project(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
+    summary: Mapped[Optional[str]] = mapped_column(Text, default="")
+    key_topics: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), default=list)
     
     # Using 1536 dimensions as per OpenAI's text-embedding-3-large default
     embedding: Mapped[Optional[list[float]]] = mapped_column(Vector(1536), nullable=True)
@@ -33,8 +35,11 @@ class Project(Base):
     )
 
     # Relationships
-    messages: Mapped[List["Message"]] = relationship(
-        "Message", back_populates="project", cascade="all, delete-orphan"
+    conversation_context: Mapped[Optional["ConversationContext"]] = relationship(
+        "ConversationContext",
+        back_populates="project",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
     script: Mapped[Optional["Script"]] = relationship(
         "Script", back_populates="project", uselist=False, cascade="all, delete-orphan"

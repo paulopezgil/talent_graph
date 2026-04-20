@@ -82,7 +82,7 @@ src/
 ├── api/
 │   ├── client.ts          # Base fetch wrapper with error handling
 │   ├── projects.ts        # Project CRUD operations
-│   ├── messages.ts        # Chat messages (send, fetch history)
+│   ├── chat.ts            # Chat message sending (session-based)
 │   ├── script.ts          # Script get/update
 │   └── social.ts          # Social media get/update
 │
@@ -149,16 +149,52 @@ const AppContext = createContext<{
 
 ### Everything Else Is Local
 
-- Chat messages: Fetched in `Chat.tsx`, stored in local `useState`
+- Chat messages: Stored in local `useState` (session-based, not persisted)
 - Script content: Fetched in `Editor.tsx` (script mode), stored locally
 - Social media content: Fetched in `Editor.tsx` (social mode), stored locally
 
-### No Global Stores
+### Session-Based Chat Messages (IMPORTANT)
 
-No Redux. No Zustand. No Context with more than these two values. If a component needs data, it either:
-- Gets it from the two global values
-- Fetches it directly from the API
-- Receives it via props from a parent
+Chat messages are **not persisted** to the database. They exist only in the current browser session.
+
+**Why**:
+- Simpler user experience - users can experiment with the AI without worrying about cluttering their project history
+- Faster development - no need to implement message editing/ deletion UI
+- The backend `conversation_context` table stores AI memory (user_intent, user_preferences, conversation_summary) - not frontend display data
+
+**How it works**:
+```
+User sends message
+        │
+        ▼
+Frontend stores message in local useState (UI only)
+        │
+        ▼
+POST /api/projects/{id}/chat with { content: "..." }
+        │
+        ▼
+Backend reads conversation_context (user_intent, user_preferences, conversation_summary)
+        │
+        ▼
+Backend invokes AI with context + user message
+        │
+        ▼
+Backend updates conversation_summary based on interaction
+        │
+        ▼
+Backend returns AI response
+        │
+        ▼
+Frontend displays response in local useState
+        │
+        ▼
+User closes browser → messages lost (but conversation_summary persisted)
+```
+
+**Implications**:
+- When switching projects, chat clears automatically
+- When refreshing the page, chat clears (no persistence)
+- The backend maintains conversation context via the database table, but the frontend just shows the current session
 
 ---
 
@@ -203,13 +239,19 @@ Display fetched data in UI
 User types message → presses Enter
         │
         ▼
-POST /api/projects/{id}/messages with { content: "..." }
+POST /api/projects/{id}/chat with { content: "..." }
+        │
+        ▼
+Backend reads conversation_context (for AI memory)
         │
         ▼
 Backend invokes AI agent
         │
         ▼
-Backend returns AI response (Message object)
+Backend updates conversation_summary
+        │
+        ▼
+Backend returns AI response
         │
         ▼
 Chat component appends message to local state
@@ -296,25 +338,21 @@ export async function updateProject(id: number, data: Partial<Project>): Promise
 }
 ```
 
-### api/messages.ts
+### api/chat.ts
 
 ```typescript
 import { fetchApi } from './client';
 
-export interface Message {
-  id: number;
-  project_id: number;
+export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
-  created_at: string;
 }
 
-export async function getMessages(projectId: number): Promise<Message[]> {
-  return fetchApi<Message[]>(`/projects/${projectId}/messages`);
-}
+// Chat messages are session-based only (see State Management section)
+// We send user message, receive AI response - no persistent history
 
-export async function sendMessage(projectId: number, content: string): Promise<Message> {
-  return fetchApi<Message>(`/projects/${projectId}/messages`, {
+export async function sendChatMessage(projectId: number, content: string): Promise<ChatMessage> {
+  return fetchApi<ChatMessage>(`/projects/${id}/chat`, {
     method: 'POST',
     body: JSON.stringify({ content }),
   });
@@ -404,11 +442,11 @@ export async function updateSocialMedia(projectId: number, data: Partial<SocialM
 
 ```typescript
 // Props: projectId (from AppContext)
-// State: local `messages` array, `input` string, `isLoading` boolean
-// - Fetches messages when projectId changes
-// - Renders message list (user right, assistant left)
-// - Input + Send button sends to API
-// - Appends response to local messages
+// State: local `messages` array (session-based), `input` string, `isLoading` boolean
+// - Messages are session-based only (not fetched from backend)
+// - User types message → presses Enter → sendMessage to API
+// - Display both user message and AI response in local state
+// - When project changes → messages reset to empty array
 ```
 
 ### Editor.tsx (Reusable)
@@ -588,12 +626,13 @@ Redux is overkill for a 4-tab app. TanStack Query is overkill for 4 endpoints. K
 |---------------|-------------------|
 | List projects | GET `/api/projects` |
 | Create project | POST `/api/projects` |
-| Get messages | GET `/api/projects/{id}/messages` |
-| Send message | POST `/api/projects/{id}/messages` |
+| Send chat message | POST `/api/projects/{id}/chat` |
 | Get script | GET `/api/projects/{id}/script` |
 | Update script | PUT `/api/projects/{id}/script` |
 | Get social | GET `/api/projects/{id}/social-media` |
 | Update social | PUT `/api/projects/{id}/social-media` |
+
+**Note**: Chat message history is **not** fetched from the backend. Messages are session-based only.
 
 ### Quick Start
 

@@ -7,7 +7,7 @@ backend/
 ├── core/              # Application config, security, and DB connection singletons
 ├── routers/           # API routing and endpoint definitions
 │   ├── projects.py     # Endpoints for Project tab
-│   ├── messages.py     # Endpoints for Chat history and Agent execution
+│   ├── conversation_context.py # Endpoints for LLM context (not frontend-facing)
 │   ├── scripts.py      # Endpoints for Script tab
 │   └── social_media.py # Endpoints for Social Network tab
 ├── services/          # Core business logic
@@ -24,7 +24,7 @@ backend/
 │   │   └── delete_last_exchange.py # Handles message editing
 │   └── crud/          # Repository pattern: Reusable DB operations
 │       ├── projects.py
-│       ├── messages.py
+│       ├── conversation_context.py
 │       ├── scripts.py
 │       └── social_media.py
 ├── models/            # Database ORM models (SQLAlchemy table structures)
@@ -42,7 +42,7 @@ Crucially, **these exact same update operations are exposed as function tools to
 
 The mapping is as follows:
 1. **Project Tab** → `projects` table (updated via `PUT /projects/{id}`)
-2. **Chat Tab** → `messages` table (updated implicitly via chat interaction)
+2. **Chat Tab** → Session-based (messages stored only in frontend React state)
 3. **Script Tab** → `scripts` table (updated via `PUT /projects/{id}/script`)
 4. **Social Network Tab** → `social_media` table (updated via `PUT /projects/{id}/social-media`)
 
@@ -59,16 +59,31 @@ Stores metadata about each project. Mapped to the **Project Tab**.
 | created_at  | TIMESTAMPTZ | Timestamp of creation |
 | updated_at  | TIMESTAMPTZ | Timestamp of last update |
 
-### 2. Messages Table (`messages`)
-Stores chat history for the AI agent per project. Mapped to the **Chat Tab**.
+### 2. Project Table (`projects`)
+Stores metadata about each project. Mapped to the **Project Tab**.
 
 | Column      | Type        | Description |
 |-------------|-------------|-------------|
-| id          | UUID (PK)   | Unique message identifier |
-| project_id  | UUID (FK)   | Links to project |
-| role        | TEXT        | `user` or `assistant` |
-| content     | TEXT        | Message text |
-| created_at  | TIMESTAMPTZ | Timestamp of message |
+| id          | UUID (PK)   | Unique project identifier |
+| title       | TEXT        | Project title |
+| description | TEXT        | Project description |
+| summary     | TEXT        | Brief project summary for quick reference |
+| key_topics  | TEXT[]      | Main topics/themes for content generation |
+| created_at  | TIMESTAMPTZ | Timestamp of creation |
+| updated_at  | TIMESTAMPTZ | Timestamp of last update |
+
+### 3. Conversation Context Table (`conversation_context`)
+Stores structured context for the AI agent per project. This table serves as the AI's memory - the backend reads these values to provide context to the LLM during conversations. **Not intended for frontend display**.
+
+| Column             | Type        | Description |
+|--------------------|-------------|-------------|
+| id                 | UUID (PK)   | Unique identifier |
+| project_id         | UUID (FK)   | Links to project |
+| user_intent        | TEXT        | What the user is trying to achieve |
+| user_preferences   | JSONB       | Style, tone, and content preferences |
+| conversation_summary | TEXT     | Brief summary of past AI interactions |
+| created_at         | TIMESTAMPTZ | Timestamp of creation |
+| updated_at         | TIMESTAMPTZ | Timestamp of last update |
 
 ### 3. Scripts Table (`scripts`)
 Stores the generated video scripts. Mapped to the **Script Tab**.
@@ -113,28 +128,17 @@ The Agent logic is strictly separated into multiple layers:
 - **Safety**: The AI never writes raw SQL. It outputs validated JSON matching the tool schemas, and the backend executes the explicit updates.
 
 ### 2. The Conversation Orchestration Layer (`services/conversation/`)
-- **get_agent_response.py**: Orchestrates the agent call. Saves user message to DB, invokes the agent, saves assistant response, returns the response.
-- **delete_last_exchange.py**: Handles the "edit last message" flow - deletes the last user/assistant pair and regenerates the response.
+- **get_agent_response.py**: Orchestrates the agent call. Reads conversation context from the database, invokes the agent, updates the conversation summary, returns the response to frontend.
+- **update_context.py**: Updates conversation context fields (user_intent, user_preferences, conversation_summary) after interactions.
 
-### 3. The HTTP API Router (`routers/messages.py`)
-This layer strictly adheres to RESTful resource management. The frontend manages `messages` as simple resources, and the backend orchestrates the AI as an invisible side-effect of creating or editing these messages. There is no isolated "Agent API".
+### 3. The HTTP API Router (`routers/conversation_context.py`)
+This router handles LLM context operations. **It is not for frontend display** - the frontend uses session-based messages only.
 
-- **`GET /api/projects/{project_id}/messages`**
-  Returns the *entire* conversation history (ordered chronologically) for the frontend Chat Tab.
+- **`GET /api/projects/{project_id}/conversation_context`**
+  Returns the conversation context (user_intent, user_preferences, conversation_summary) for the AI.
 
-- **`POST /api/projects/{project_id}/messages` (New Message)**
-  1. Saves the user's input as a new `user` message to the database.
-  2. Invokes the `generate_agent_response()` orchestrator in the service layer.
-  3. Saves the AI's final text response as an `assistant` message.
-  4. Returns the AI's message to the frontend.
-
-- **`PUT /api/projects/{project_id}/messages/last` (Edit Last Message & Regenerate)**
-  Provides a simple way for users to correct typos or change direction without managing complex history tree states.
-  1. Locates the last pair of messages.
-  2. Edits the last `user` message with the new text.
-  3. Deletes the subsequent `assistant` message (if one exists).
-  4. Invokes the `generate_agent_response()` orchestrator.
-  5. Saves the new AI response to the DB and returns it.
+- **`PUT /api/projects/{project_id}/conversation_context`**
+  Updates conversation context fields based on user interactions.
 
 ## Architecture Patterns
 
@@ -172,9 +176,9 @@ The service layer should raise specific exceptions rather than returning error s
 
 ## Backend Responsibilities
 
-1. Expose explicit REST endpoints via domain-specific routers (`projects.py`, `messages.py`, `scripts.py`, `social_media.py`) which delegate to `services/crud/`.
-2. Receive user messages from the frontend via the `messages.py` router (`POST` for new messages, `PUT /last` for editing the final message).
-3. Hydrate context: Fetch the sliding window of `messages` and current state from `projects`, `scripts`, and `social_media` tables using the CRUD service.
+1. Expose explicit REST endpoints via domain-specific routers (`projects.py`, `scripts.py`, `social_media.py`) which delegate to `services/crud/`.
+2. Chat messages are handled via session-based communication - frontend sends user message, backend processes and returns AI response.
+3. Maintain conversation context: Read from `conversation_context` table and inject into LLM prompts.
 4. Call OpenAI API via Pydantic AI (handled in `services/agent.py`).
 5. Return response to frontend (validated via schemas in `schemas/`).
 
