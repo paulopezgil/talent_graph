@@ -1,0 +1,67 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.project-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 8px 0;
+}
+
+.project-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  margin: 2px 8px;
+  color: var(--text-color);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-item:hover {
+  background: var(--border-color);
+}
+
+.project-item.selected {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.create-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+}
+
+.create-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
