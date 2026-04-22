@@ -28,10 +28,10 @@ app = FastAPI(title="Vidplan AI", version="0.1.0", lifespan=lifespan)
 
 
 # Data Routes
-app.include_router(projects.router)
-app.include_router(chat.router)
-app.include_router(scripts.router)
-app.include_router(social_media.router)
+app.include_router(projects.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
+app.include_router(scripts.router, prefix="/api")
+app.include_router(social_media.router, prefix="/api")
 
 
 # Global Exception Handler (only for VidPlanError and its subclasses)

@@ -58,7 +58,7 @@ cp .env.example .env
 docker compose up --build
 
 # Access the application:
-# - Frontend: http://localhost:8501
+# - Frontend: http://localhost:5173
 # - Backend API: http://localhost:8000
 # - API Documentation: http://localhost:8000/docs
 # - Database: localhost:5432 (user: admin, password: password)
@@ -67,14 +67,14 @@ docker compose up --build
 **Services Started:**
 - ✅ **PostgreSQL with PGVector** - Vector-enabled database for semantic search
 - ✅ **FastAPI Backend** - REST API with AI agent orchestration
-- ✅ **Streamlit Frontend** - Interactive web interface
+- ✅ **React Frontend** - Interactive web interface built with Vite
 
 **Environment Variables:**
 The application uses the following key environment variables (configured in `.env`):
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
 - `AI_MODEL`: LLM provider and model (default: `openai:gpt-4o-mini`)
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`: Database credentials
-- `API_URL`: Backend API URL for frontend (default: `http://backend:8000`)
+- `VITE_API_URL`: Frontend API URL (default: `http://localhost:8000`)
 
 ## 🛠️ Tech Stack
 
@@ -86,7 +86,7 @@ The application uses the following key environment variables (configured in `.en
 - **Validation**: Pydantic v2
 
 ### Frontend
-- **Framework**: Streamlit for rapid UI development
+- **Framework**: React + TypeScript + Vite
 - **Layout**: Custom multi-tab workspace with project sidebar
 
 ### Infrastructure

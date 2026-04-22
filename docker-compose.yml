@@ -45,9 +45,7 @@ services:
     build:
       context: ./frontend
     ports:
-      - "${FRONTEND_PORT:-8501}:${FRONTEND_PORT:-8501}"
-    environment:
-      - API_URL=http://backend:${BACKEND_PORT:-8000}
+      - "${FRONTEND_PORT:-5173}:80"
     networks:
       - frontend_net
     depends_on:
