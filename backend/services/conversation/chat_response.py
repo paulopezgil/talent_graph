@@ -23,15 +23,18 @@ async def generate_chat_response(
     # 1. Get conversation context for AI memory
     context = await get_conversation_context(db, project_id)
 
-    # 2. Get AI Response (passing conversation context and message history)
+    # 2. Convert history to dicts for the agent
+    message_history = [{"role": msg.role, "content": msg.content} for msg in (history or [])]
+
+    # 3. Get AI Response (passing conversation context and message history)
     ai_text = await generate_agent_response(
         db,
         project_id,
         content,
-        message_history=history or [],
+        message_history=message_history,
     )
 
-    # 3. Update conversation summary for future interactions
+    # 4. Update conversation summary for future interactions
     if context:
         # Append to existing summary or create new one
         current_summary = context.conversation_summary or ""
@@ -43,5 +46,5 @@ async def generate_chat_response(
             ConversationContextUpdate(conversation_summary=new_summary[:500]),  # Limit length
         )
 
-    # 4. Return response for frontend (session-based, not persisted)
+    # 5. Return response for frontend (session-based, not persisted)
     return {"role": "assistant", "content": ai_text}
